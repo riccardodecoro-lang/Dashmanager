@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Whale Bot</title>
+<style>
+  :root {
+    --bg: #050607; --card: #0e1012; --line: #1c1f23; --text: #f2f3f4; --dim: #7c828a; --faint: #4a4f56;
+    --green: #34d97b; --red: #ff5c5c; --amber: #f5b942;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 14px 16px 40px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 34px; height: 34px; border-radius: 10px; background: #e9eaec; display: grid; place-items: center; }
+  .logo span { width: 18px; height: 12px; border-radius: 50%; background: #111; position: relative; }
+  h1 { font-size: 20px; margin: 0; font-weight: 700; }
+  .tag { font: 11px var(--mono); color: var(--dim); border: 1px solid var(--line); padding: 2px 8px; border-radius: 99px; }
+  .badge { margin-left: auto; font-size: 12px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); display: flex; gap: 6px; align-items: center; }
+  .badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .badge.paper i { background: var(--amber); } .badge.paused i { background: var(--dim); }
+  .ticker { display: flex; gap: 8px; overflow-x: auto; margin: 14px -16px 0; padding: 0 16px; scrollbar-width: none; }
+  .ticker::-webkit-scrollbar { display: none; }
+  .chip { flex: none; font: 12px var(--mono); border: 1px solid var(--line); padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+  .sub { font: 12px var(--mono); color: var(--dim); margin-top: 16px; }
+  .big { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+  .big b { font-size: 54px; font-weight: 800; letter-spacing: -1.5px; }
+  .big b small { font-size: inherit; color: var(--faint); font-weight: 800; }
+  .big .delta { margin-left: auto; font: 13px var(--mono); padding: 3px 8px; border-radius: 8px; background: #0f2a1b; color: var(--green); }
+  .big .delta.neg { background: #2c1212; color: var(--red); }
+  .row { display: flex; gap: 10px; align-items: center; font: 13px var(--mono); color: var(--dim); margin-top: 6px; flex-wrap: wrap; }
+  .pill { background: var(--text); color: #000; font-weight: 700; padding: 2px 8px; border-radius: 7px; }
+  .pos { color: var(--green); } .neg { color: var(--red); }
+  svg.chart { width: 100%; height: 170px; display: block; margin-top: 10px; }
+  .axis { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--faint); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; margin-top: 14px; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; display: flex; justify-content: space-between; align-items: center; }
+  .card h2 em { font: 11px var(--mono); color: var(--dim); font-style: normal; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+  .item:first-of-type { border-top: 0; }
+  .av { width: 26px; height: 26px; border-radius: 50%; background: #222 center/cover; flex: none; }
+  .item .name { font-weight: 700; } .item .meta { font: 11px var(--mono); color: var(--dim); }
+  .item .right { margin-left: auto; text-align: right; font: 13px var(--mono); }
+  .item button { margin-left: 8px; }
+  .log { font: 12px/1.5 var(--mono); max-height: 380px; overflow-y: auto; }
+  .log div { display: flex; gap: 8px; padding: 3px 0; }
+  .log .t { color: var(--faint); flex: none; } .log .k { width: 38px; font-weight: 700; flex: none; }
+  .k.BUY { color: var(--green); } .k.SELL { color: var(--amber); } .k.SKIP { color: var(--faint); } .k.ERROR { color: var(--red); } .k.INFO { color: var(--dim); }
+  .log .x { color: #b9bec5; overflow-wrap: anywhere; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grid div { background: #15181b; border-radius: 10px; padding: 8px 10px; }
+  .grid small { display: block; font: 10px var(--mono); color: var(--dim); }
+  .grid b { font-size: 20px; }
+  .controls { display: flex; gap: 8px; margin-top: 14px; }
+  button { font: 600 13px inherit; color: var(--text); background: #1a1d21; border: 1px solid var(--line); padding: 10px 14px; border-radius: 12px; cursor: pointer; }
+  button.danger { color: var(--red); }
+  button.sm { padding: 4px 8px; font-size: 11px; border-radius: 8px; }
+  .empty { color: var(--faint); font: 12px var(--mono); padding: 6px 0; }
+  .warn { font: 12px var(--mono); color: var(--amber); margin-top: 8px; }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><span></span></div>
+    <h1>Whale Bot</h1>
+    <span class="tag">copy mode</span>
+    <span class="badge" id="badge"><i></i><span>—</span></span>
+  </header>
+
+  <div class="ticker" id="ticker"></div>
+
+  <div class="sub" id="sub">connessione…</div>
+  <div class="big"><b id="value">—</b><span class="delta" id="delta"></span></div>
+  <div class="row" id="row1"></div>
+  <div class="row" id="row2"></div>
+
+  <svg class="chart" id="chart" viewBox="0 0 500 170" preserveAspectRatio="none"></svg>
+  <div class="axis"><span id="ax0"></span><span>— valore · - - capitale</span><span id="ax1"></span></div>
+
+  <div class="controls">
+    <button id="pause">Pausa acquisti</button>
+    <button class="danger" id="sellall">Vendi tutto</button>
+  </div>
+  <div class="warn" id="warn"></div>
+
+  <div class="card"><h2>Posizioni <em id="poscount"></em></h2><div id="positions"></div></div>
+  <div class="card"><h2>Decisioni <em>dal vivo</em></h2><div class="log" id="log"></div></div>
+  <div class="card"><h2>Riepilogo <em id="since"></em></h2>
+    <div class="grid" id="recap"></div>
+    <div class="row" id="bestworst" style="display:block"></div>
+  </div>
+  <div class="card"><h2>Trade chiusi <em>ultimi 50</em></h2><div id="closed"></div></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const safeImg = (u) => (typeof u === 'string' && /^https:\/\//.test(u) ? `style="background-image:url('${encodeURI(u)}')"` : '');
+const time = (t) => new Date(t).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+const sgn = (n, d = 4) => (n >= 0 ? '+' : '') + n.toFixed(d);
+const cls = (n) => (n >= 0 ? 'pos' : 'neg');
+let S = null;
+
+function money(sol) {
+  if (S && S.solUsd) {
+    const usd = sol * S.solUsd;
+    const [i, f] = usd.toFixed(2).split('.');
+    return `$${Number(i).toLocaleString('en-US')}<small>.${f}</small>`;
+  }
+  const [i, f] = sol.toFixed(3).split('.');
+  return `${i}<small>.${f} SOL</small>`;
+}
+
+function chart(eq, base) {
+  const svg = $('chart');
+  if (eq.length < 2) { svg.innerHTML = ''; return; }
+  const W = 500, H = 170, P = 8;
+  const vs = eq.map((p) => p.v).concat(base);
+  const lo = Math.min(...vs), hi = Math.max(...vs), span = hi - lo || 1;
+  const t0 = eq[0].t, t1 = eq[eq.length - 1].t, ts = t1 - t0 || 1;
+  const x = (t) => ((t - t0) / ts) * (W - 2 * P) + P;
+  const y = (v) => H - P - ((v - lo) / span) * (H - 2 * P);
+  const pts = eq.map((p) => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`);
+  const last = eq[eq.length - 1];
+  const col = last.v >= base ? 'var(--green)' : 'var(--red)';
+  svg.innerHTML = `
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".35"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+    <line x1="0" x2="${W}" y1="${y(base)}" y2="${y(base)}" stroke="#3a3f45" stroke-dasharray="4 4"/>
+    <polygon points="${P},${H} ${pts.join(' ')} ${x(last.t)},${H}" fill="url(#g)"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${col}" stroke-width="2"/>
+    <circle cx="${x(last.t)}" cy="${y(last.v)}" r="5" fill="#000" stroke="#fff" stroke-width="2"/>`;
+  $('ax0').textContent = time(t0); $('ax1').textContent = time(t1);
+}
+
+function render() {
+  const s = S;
+  const pnl = s.equitySol - s.budgetSol;
+  const badge = $('badge');
+  badge.className = 'badge ' + (s.paused ? 'paused' : s.mode === 'paper' ? 'paper' : '');
+  badge.querySelector('span').textContent = s.paused ? 'In pausa' : s.mode === 'live' ? 'Live · soldi veri' : 'Simulazione';
+  $('pause').textContent = s.paused ? 'Riattiva acquisti' : 'Pausa acquisti';
+
+  $('ticker').innerHTML = s.positions.map((p) => {
+    const pct = (p.lastValueSol / p.costSol - 1) * 100;
+    return `<span class="chip">$${esc(p.symbol)} <span class="${cls(pct)}">${sgn(pct, 1)}%</span></span>`;
+  }).join('') || `<span class="chip">${s.whales.length} wallet seguiti</span>`;
+
+  const mins = Math.floor((s.now - s.startedAt) / 60000);
+  $('sub').textContent = `segue ${s.whales.length} wallet · via Jupiter · ${Math.floor(mins / 60)}h ${mins % 60}m attivo`;
+  $('value').innerHTML = money(s.equitySol);
+  const d = $('delta');
+  d.textContent = `${sgn(pnl, 3)} SOL`; d.className = 'delta' + (pnl < 0 ? ' neg' : '');
+  $('row1').innerHTML = `<span>capitale ${s.budgetSol} SOL · ${s.trades} trade</span><span class="pill">${(s.equitySol / s.budgetSol).toFixed(2)}×</span>`;
+  $('row2').innerHTML = `<span class="${cls(s.realizedSol)}">realizzato ${sgn(s.realizedSol)} SOL</span><span>· ${s.wins}W ${s.losses}L</span>` +
+    (s.walletSol !== null ? `<span>· wallet ${s.walletSol.toFixed(3)} SOL</span>` : '') +
+    (s.solUsd ? `<span>· SOL $${s.solUsd.toFixed(2)}</span>` : '');
+  chart(s.equity, s.budgetSol);
+
+  $('warn').textContent = s.mode === 'live'
+    ? `Stop loss -${s.rules.stopLossPct}% · ${s.rules.tradeSol} SOL per trade · max ${s.rules.maxOpenPositions} posizioni · stop giornaliero -${s.rules.maxDailyLossSol} SOL`
+    : 'Simulazione: prezzi e wallet veri, trade virtuali.';
+
+  $('poscount').textContent = `${s.positions.length} aperte`;
+  $('positions').innerHTML = s.positions.map((p) => {
+    const pnl = p.lastValueSol - p.costSol, pct = (p.lastValueSol / p.costSol - 1) * 100;
+    return `<div class="item"><span class="av" ${safeImg(p.image)}></span>
+      <div><div class="name">$${esc(p.symbol)}</div><div class="meta">da ${esc(p.whaleLabel)} · ${time(p.openedAt)}${p.whaleExited ? ' · whale uscita' : ''}</div></div>
+      <div class="right"><div class="${cls(pnl)}">${sgn(pnl)} SOL</div><div class="meta">${sgn(pct, 1)}%</div></div>
+      <button class="sm danger" data-sell="${esc(p.mint)}">Vendi</button></div>`;
+  }).join('') || '<div class="empty">nessuna posizione aperta — in attesa delle whale</div>';
+
+  $('log').innerHTML = s.decisions.map((e) =>
+    `<div><span class="t">${time(e.t)}</span><span class="k ${esc(e.kind)}">${esc(e.kind)}</span>` +
+    `<span class="x">${e.symbol ? '$' + esc(e.symbol) + ' · ' : ''}${esc(e.text)}</span></div>`).join('') || '<div class="empty">nessuna decisione ancora</div>';
+
+  const wr = s.trades ? Math.round((s.wins / s.trades) * 100) : 0;
+  $('since').textContent = 'dal ' + new Date(s.startedAt).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  $('recap').innerHTML = `<div><small>trade</small><b>${s.trades}</b></div><div><small>win rate</small><b>${wr}%</b></div><div><small>segnali scartati</small><b>${s.stats.skipped}</b></div>`;
+  $('bestworst').innerHTML = s.best
+    ? `<div>migliore $${esc(s.best.symbol)} <span class="${cls(s.best.pnlSol)}">${sgn(s.best.pnlSol)} SOL</span></div><div>peggiore $${esc(s.worst.symbol)} <span class="${cls(s.worst.pnlSol)}">${sgn(s.worst.pnlSol)} SOL</span></div>`
+    : '';
+
+  $('closed').innerHTML = s.closed.map((t) => `<div class="item"><span class="av" ${safeImg(t.image)}></span>
+      <div><div class="name">$${esc(t.symbol)}</div><div class="meta">${time(t.openedAt)}→${time(t.closedAt)} · ${esc(t.reason)}</div></div>
+      <div class="right"><div class="${cls(t.pnlSol)}">${sgn(t.pnlSol)} SOL</div><div class="meta">${sgn(t.pnlPct, 1)}%</div></div></div>`).join('')
+    || '<div class="empty">nessun trade chiuso</div>';
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/api/state', { cache: 'no-store' });
+    S = await r.json();
+    render();
+  } catch (e) { $('sub').textContent = 'bot non raggiungibile'; }
+}
+
+function token() {
+  try { return localStorage.getItem('botToken') || ''; } catch { return ''; }
+}
+async function cmd(path) {
+  let r = await fetch(path, { method: 'POST', headers: { 'x-bot-token': token() } });
+  if (r.status === 401) {
+    const t = prompt('Token della dashboard (DASHBOARD_TOKEN):');
+    if (!t) return;
+    try { localStorage.setItem('botToken', t); } catch {}
+    r = await fetch(path, { method: 'POST', headers: { 'x-bot-token': t } });
+  }
+  refresh();
+}
+$('pause').onclick = () => cmd(S && S.paused ? '/api/resume' : '/api/pause');
+$('sellall').onclick = () => { if (confirm('Vendere tutte le posizioni aperte?')) cmd('/api/sell-all'); };
+$('positions').onclick = (e) => {
+  const m = e.target.dataset && e.target.dataset.sell;
+  if (m && confirm('Vendere questa posizione?')) cmd('/api/sell?mint=' + encodeURIComponent(m));
+};
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
