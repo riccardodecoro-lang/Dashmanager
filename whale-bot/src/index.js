@@ -8,7 +8,12 @@ import { startServer } from './server.js';
 
 const cfg = loadConfig();
 const conn = chain.makeConnection(cfg);
-const keypair = cfg.privateKey ? chain.loadKeypair(cfg.privateKey) : null;
+let keypair = null;
+if (cfg.privateKey) {
+  try { keypair = chain.loadKeypair(cfg.privateKey); } catch {
+    throw new Error('PRIVATE_KEY non valida: incolla la chiave privata esportata da Phantom (base58) o l\'array JSON');
+  }
+}
 
 if (cfg.live) {
   console.log('\n⚠️  MODALITÀ SOLDI VERI');
@@ -17,6 +22,11 @@ if (cfg.live) {
   console.log('   Puoi perdere tutto il budget. Ctrl+C per fermare.\n');
 } else {
   console.log('\nModalità simulazione: nessun trade reale. Metti LIVE=true nel .env per usare soldi veri.\n');
+}
+
+if (!cfg.persistent) {
+  console.log('⚠️  Nessun volume persistente: a ogni riavvio il bot dimentica le posizioni aperte.');
+  if (cfg.live) throw new Error('Con LIVE=true su Railway aggiungi un Volume al servizio (vedi README)');
 }
 
 const store = new Store(cfg);

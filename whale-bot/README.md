@@ -49,6 +49,26 @@ Apri http://127.0.0.1:8787. Con `LIVE=false` il bot segue wallet e prezzi veri, 
 
 Simulazione e soldi veri usano file di stato diversi (`data/state-paper.json` e `data/state-live.json`). Se fermi il bot con Ctrl+C, le posizioni aperte restano nel wallet e vengono riprese al prossimo avvio.
 
+## Avviarlo dal telefono (Railway)
+
+Se non hai un computer sempre acceso, puoi farlo girare su [Railway](https://railway.com) (costa circa 5 $ al mese) e gestirlo tutto dal browser del telefono.
+
+1. Accedi a railway.com con GitHub → **New Project** → **Deploy from GitHub repo** → scegli `Dashmanager`.
+2. Apri il servizio → **Settings**:
+   - **Source → Branch**: `claude/new-session-gvh6fa` (o il ramo principale, dopo il merge);
+   - **Root Directory**: `whale-bot`;
+   - **Networking → Generate Domain**: ti dà l'indirizzo della dashboard.
+3. **Variables**: aggiungi
+   - `WHALES` = gli indirizzi da seguire, separati da virgola. Puoi aggiungere un'etichetta: `indirizzo1:whale1,indirizzo2:smart`;
+   - `RPC_URL` = la tua RPC privata (per esempio quella di Helius);
+   - `DASHBOARD_TOKEN` = una password lunga, che la dashboard ti chiederà;
+   - le altre impostazioni di `.env.example`, se vuoi cambiarle (`BUDGET_SOL`, `TRADE_SOL`, `STOP_LOSS_PCT`…).
+4. Clic destro sul servizio → **Attach Volume** → mount path `/data`. Senza volume il bot dimenticherebbe le posizioni a ogni riavvio, e infatti con soldi veri non parte.
+5. Apri l'indirizzo generato al punto 2 e inserisci la password. Parte in simulazione.
+6. Quando sei pronto per i soldi veri, aggiungi `PRIVATE_KEY` (del wallet dedicato) e `LIVE=true` nelle Variables. Railway riavvia il bot da solo.
+
+Per fermarlo: **Pausa acquisti** dalla dashboard, oppure su Railway il servizio → **Settings** → **Delete** (prima vendi le posizioni con **Vendi tutto**).
+
 ## Dashboard
 
 - Valore attuale, profitto, moltiplicatore, grafico del valore nel tempo.
@@ -57,7 +77,7 @@ Simulazione e soldi veri usano file di stato diversi (`data/state-paper.json` e 
 - Riepilogo: trade, win rate, migliore e peggiore.
 - **Pausa acquisti** e **Vendi tutto**.
 
-La dashboard è raggiungibile solo dal computer su cui gira il bot (`HOST=127.0.0.1`). Per aprirla dal telefono usa un tunnel privato come Tailscale, oppure imposta `HOST=0.0.0.0` insieme a un `DASHBOARD_TOKEN` lungo e casuale.
+Sul tuo computer la dashboard è raggiungibile solo da lì (`HOST=127.0.0.1`). Su Railway è pubblica, ma protetta da `DASHBOARD_TOKEN`: senza password non si vedono i dati e non si possono dare comandi.
 
 ## Test
 

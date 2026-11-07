@@ -190,25 +190,38 @@ function render() {
     || '<div class="empty">nessun trade chiuso</div>';
 }
 
-async function refresh() {
-  try {
-    const r = await fetch('/api/state', { cache: 'no-store' });
-    S = await r.json();
-    render();
-  } catch (e) { $('sub').textContent = 'bot non raggiungibile'; }
+let memToken = '';
+function token() {
+  try { return localStorage.getItem('botToken') || memToken; } catch { return memToken; }
+}
+function askToken() {
+  const t = prompt('Password della dashboard (DASHBOARD_TOKEN):');
+  if (!t) return false;
+  memToken = t;
+  try { localStorage.setItem('botToken', t); } catch {}
+  return true;
+}
+async function api(path, method = 'GET') {
+  let r = await fetch(path, { method, cache: 'no-store', headers: { 'x-bot-token': token() } });
+  if (r.status === 401 && askToken()) r = await fetch(path, { method, cache: 'no-store', headers: { 'x-bot-token': token() } });
+  return r;
 }
 
-function token() {
-  try { return localStorage.getItem('botToken') || ''; } catch { return ''; }
+let asking = false;
+async function refresh() {
+  if (asking) return;
+  try {
+    asking = true;
+    const r = await api('/api/state');
+    asking = false;
+    if (r.status === 401) { $('sub').textContent = 'password richiesta — ricarica la pagina'; return; }
+    S = await r.json();
+    render();
+  } catch (e) { asking = false; $('sub').textContent = 'bot non raggiungibile'; }
 }
+
 async function cmd(path) {
-  let r = await fetch(path, { method: 'POST', headers: { 'x-bot-token': token() } });
-  if (r.status === 401) {
-    const t = prompt('Token della dashboard (DASHBOARD_TOKEN):');
-    if (!t) return;
-    try { localStorage.setItem('botToken', t); } catch {}
-    r = await fetch(path, { method: 'POST', headers: { 'x-bot-token': t } });
-  }
+  await api(path, 'POST');
   refresh();
 }
 $('pause').onclick = () => cmd(S && S.paused ? '/api/resume' : '/api/pause');

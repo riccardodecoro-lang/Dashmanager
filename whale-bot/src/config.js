@@ -20,11 +20,21 @@ function bool(name, def) {
 }
 
 function loadWhales(file) {
-  const p = path.resolve(ROOT, file);
-  if (!fs.existsSync(p)) {
-    throw new Error(`File dei wallet da seguire non trovato: ${p}. Copia whales.example.json in whales.json e inserisci gli indirizzi.`);
+  let list;
+  // Sui server online è più comodo una variabile: WHALES=indirizzo1:etichetta,indirizzo2
+  if (process.env.WHALES && process.env.WHALES.trim()) {
+    file = 'WHALES';
+    list = process.env.WHALES.split(/[\s,;]+/).filter(Boolean).map((s) => {
+      const [address, label] = s.split(':');
+      return label ? { address, label } : address;
+    });
+  } else {
+    const p = path.resolve(ROOT, file);
+    if (!fs.existsSync(p)) {
+      throw new Error(`Nessun wallet da seguire: imposta la variabile WHALES oppure copia whales.example.json in whales.json.`);
+    }
+    list = JSON.parse(fs.readFileSync(p, 'utf8'));
   }
-  const list = JSON.parse(fs.readFileSync(p, 'utf8'));
   if (!Array.isArray(list) || list.length === 0) throw new Error(`${file} deve contenere almeno un wallet`);
   return list.map((w, i) => {
     const address = typeof w === 'string' ? w : w.address;
@@ -43,7 +53,10 @@ export function loadConfig() {
     privateKey: process.env.PRIVATE_KEY || '',
     jupiterUrl: (process.env.JUPITER_URL || 'https://lite-api.jup.ag/swap/v1').replace(/\/$/, ''),
     whales: loadWhales(process.env.WHALES_FILE || 'whales.json'),
-    stateFile: path.resolve(ROOT, process.env.STATE_FILE || (live ? 'data/state-live.json' : 'data/state-paper.json')),
+    // Su Railway, se c'è un volume, lo stato va lì così sopravvive ai riavvii
+    stateFile: path.resolve(process.env.RAILWAY_VOLUME_MOUNT_PATH || ROOT,
+      process.env.STATE_FILE || (process.env.RAILWAY_VOLUME_MOUNT_PATH ? '' : 'data/') + (live ? 'state-live.json' : 'state-paper.json')),
+    persistent: !process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_VOLUME_MOUNT_PATH,
 
     // Capitale e dimensione
     budgetSol: num('BUDGET_SOL', 0.5),            // capitale massimo che il bot può usare
@@ -82,7 +95,7 @@ export function loadConfig() {
 
     // Dashboard
     port: num('PORT', 8787),
-    host: process.env.HOST || '127.0.0.1',
+    host: process.env.HOST || (process.env.RAILWAY_ENVIRONMENT ? '0.0.0.0' : '127.0.0.1'),
   };
 
   if (cfg.live && !cfg.privateKey) throw new Error('LIVE=true richiede PRIVATE_KEY nel file .env');

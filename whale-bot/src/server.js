@@ -6,7 +6,7 @@ export function startServer(cfg, bot) {
   const page = path.join(cfg.root, 'public', 'index.html');
   const token = process.env.DASHBOARD_TOKEN || '';
   const isLocal = ['127.0.0.1', 'localhost', '::1'].includes(cfg.host);
-  if (!isLocal && !token) throw new Error('Con HOST pubblico serve DASHBOARD_TOKEN, altrimenti chiunque può vendere le tue posizioni');
+  if (!isLocal && token.length < 12) throw new Error('Dashboard pubblica: imposta DASHBOARD_TOKEN (almeno 12 caratteri), altrimenti chiunque può vedere e vendere le tue posizioni');
 
   const json = (res, code, body) => {
     res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -19,10 +19,12 @@ export function startServer(cfg, bot) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       return fs.createReadStream(page).pipe(res);
     }
+    if (url.pathname.startsWith('/api/') && token && req.headers['x-bot-token'] !== token) {
+      return json(res, 401, { error: 'token mancante o errato' });
+    }
     if (req.method === 'GET' && url.pathname === '/api/state') return json(res, 200, bot.snapshot());
 
     if (req.method === 'POST' && url.pathname.startsWith('/api/')) {
-      if (token && req.headers['x-bot-token'] !== token) return json(res, 401, { error: 'token mancante o errato' });
       switch (url.pathname) {
         case '/api/pause': bot.pause(true); break;
         case '/api/resume': bot.pause(false); break;
