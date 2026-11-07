@@ -17,6 +17,15 @@ Bot di copy trading per Solana. Segue i wallet che scegli tu e, quando uno compr
 3. **Compra** `TRADE_SOL` via Jupiter e registra il costo reale, con fee e rent inclusi.
 4. **Esce** con il primo di questi eventi: stop loss, take profit, trailing stop, vendita della whale copiata, tempo massimo di tenuta, oppure il tuo pulsante "Vendi". Il valore della posizione viene calcolato come i SOL che otterresti vendendo davvero adesso, non con il prezzo teorico. Se una vendita fallisce, il bot riprova alzando lo slippage, fino a un massimo del 15%.
 
+## Su Windows (il modo più semplice)
+
+1. Installa **Node.js LTS** da https://nodejs.org/it/download.
+2. Scarica il bot da GitHub (pulsante **Code → Download ZIP** sul ramo del bot), estrai lo zip e apri la cartella `whale-bot`.
+3. Fai doppio clic su **`avvia.bat`**. Al primo avvio installa i pacchetti e apre Blocco note: compila `WHALES` e `RPC_URL`, salva e chiudi.
+4. La dashboard si apre da sola nel browser (http://127.0.0.1:8787).
+
+Per fermarlo chiudi la finestra nera oppure premi Ctrl+C.
+
 ## Installazione
 
 Serve Node.js 20 o più recente.
