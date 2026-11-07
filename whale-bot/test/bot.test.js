@@ -123,3 +123,18 @@ test('vendita manuale dalla dashboard', async () => {
   assert.equal(snap.trades, 1);
   bot.store.flush();
 });
+
+test('errore RPC durante la lettura: il trade non va perso', async () => {
+  const { bot, whaleDoes } = setup();
+  await bot.init();
+  whaleDoes('w1', -3, 3e3);
+  const orig = bot.d.chain.getParsedTx;
+  bot.d.chain.getParsedTx = async () => { throw new Error('429 Too Many Requests'); };
+  await bot.pollWhales();
+  assert.equal(Object.keys(bot.state.positions).length, 0);
+  assert.equal(bot.state.lastSigs[WHALE], 'old', 'firma non avanzata');
+  bot.d.chain.getParsedTx = orig;
+  await bot.pollWhales();
+  assert.ok(bot.state.positions[MINT], 'copiato al giro successivo');
+  bot.store.flush();
+});

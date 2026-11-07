@@ -49,7 +49,7 @@ export async function getNewSignatures(conn, address, untilSig, limit = 25) {
 
 export async function getParsedTx(conn, signature, tries = 6) {
   for (let i = 0; i < tries; i++) {
-    const tx = await conn.getParsedTransaction(signature, { maxSupportedTransactionVersion: 0, commitment: 'confirmed' });
+    const tx = await conn.getParsedTransaction(signature, { maxSupportedTransactionVersion: 1, commitment: 'confirmed' });
     if (tx) return tx;
     await new Promise((r) => setTimeout(r, 1500));
   }

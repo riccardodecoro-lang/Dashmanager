@@ -45,7 +45,8 @@ export class Jupiter {
       }),
     });
     if (!res.ok) throw new Error(`Jupiter swap HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    const { swapTransaction, lastValidBlockHeight } = await res.json();
+    const { swapTransaction, lastValidBlockHeight, simulationError } = await res.json();
+    if (simulationError) throw new Error(`Jupiter prevede che la swap fallisca: ${JSON.stringify(simulationError).slice(0, 200)}`);
 
     const tx = VersionedTransaction.deserialize(Buffer.from(swapTransaction, 'base64'));
     tx.sign([keypair]);

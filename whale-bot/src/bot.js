@@ -66,12 +66,13 @@ export class Bot {
           continue;
         }
         const sigs = await this.d.chain.getNewSignatures(this.d.conn, w.address, this.state.lastSigs[w.address]);
-        if (!sigs.length) continue;
-        this.state.lastSigs[w.address] = sigs[0].signature;
-        this.store.save();
+        // dal più vecchio al più recente; l'ultima firma avanza solo dopo averla letta,
+        // così un errore dell'RPC non fa perdere trade (si riprova al giro dopo)
         for (const s of sigs.reverse()) {
           const tx = await this.d.chain.getParsedTx(this.d.conn, s.signature);
           const sw = tx && parseSwap(tx, w.address);
+          this.state.lastSigs[w.address] = s.signature;
+          this.store.save();
           if (sw) await this.onWhaleSwap(w, sw);
         }
       } catch (e) {
