@@ -1,0 +1,18 @@
+{
+  "name": "whale-bot",
+  "version": "0.1.0",
+  "description": "Copy-trading bot per Solana: segue wallet scelti e replica gli acquisti via Jupiter, con risk manager e dashboard.",
+  "type": "module",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
